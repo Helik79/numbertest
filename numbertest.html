@@ -1,0 +1,562 @@
+<!DOCTYPE html>
+<html lang="cs" class="h-full bg-slate-900 text-slate-100">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Číselný Test - Rychlé Hodnocení</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+    <!-- Canvas Confetti pro efekty při výborném výsledku -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            touch-action: manipulation;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        /* Vlastní animace pro vizuální odezvu */
+        @keyframes flashGreen {
+            0% { background-color: rgba(34, 197, 94, 0.3); }
+            100% { background-color: transparent; }
+        }
+
+        @keyframes flashRed {
+            0% { background-color: rgba(239, 68, 68, 0.3); }
+            100% { background-color: transparent; }
+        }
+
+        .flash-correct {
+            animation: flashGreen 0.3s ease-out;
+        }
+
+        .flash-wrong {
+            animation: flashRed 0.3s ease-out;
+        }
+
+        .number-pop {
+            animation: popIn 0.15s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        @keyframes popIn {
+            0% { transform: scale(0.8); opacity: 0.5; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        /* Prevent double tap zoom on buttons */
+        button {
+            touch-action: manipulation;
+        }
+    </style>
+</head>
+<body class="h-full flex flex-col justify-between overflow-x-hidden select-none bg-slate-900 text-slate-100 antialiased" id="body-container">
+
+    <!-- Záhlaví aplikace -->
+    <header class="w-full p-4 border-b border-slate-800 bg-slate-900/80 backdrop-blur-md sticky top-0 z-10">
+        <div class="max-w-4xl mx-auto flex justify-between items-center">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-emerald-500 to-teal-400 flex items-center justify-center font-black text-xl shadow-lg shadow-emerald-500/20">
+                    #
+                </div>
+                <div>
+                    <h1 class="text-xl font-bold tracking-tight text-white leading-tight">Číselný Test</h1>
+                    <p class="text-xs text-slate-400 font-medium">Rychlé hodnocení do 60 sekund</p>
+                </div>
+            </div>
+            
+            <!-- Tlačítko zvuku / nastavení v hlavičce -->
+            <button id="sound-toggle" class="p-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 transition-colors flex items-center gap-2 text-sm font-semibold">
+                <span id="sound-icon">🔊</span>
+                <span class="hidden sm:inline" id="sound-text">Zvuk Zapnut</span>
+            </button>
+        </div>
+    </header>
+
+    <!-- Hlavní obsahový prostor -->
+    <main class="flex-1 max-w-4xl w-full mx-auto p-4 sm:p-6 flex flex-col justify-center items-center">
+
+        <!-- 1. ÚVODNÍ OBRAZOVKA -->
+        <section id="screen-start" class="w-full max-w-xl bg-slate-800/90 border border-slate-700/60 rounded-3xl p-6 sm:p-8 shadow-2xl backdrop-blur-xl flex flex-col items-center text-center transition-all duration-300">
+            <div class="w-20 h-20 bg-emerald-500/10 border border-emerald-500/30 rounded-3xl flex items-center justify-center text-4xl mb-6 text-emerald-400">
+                ⏱️
+            </div>
+            
+            <h2 class="text-3xl font-extrabold text-white mb-3">Jste připraveni?</h2>
+            <p class="text-slate-300 mb-8 max-w-md text-base leading-relaxed">
+                Máte přesně <span class="text-emerald-400 font-bold">60 sekund</span> na rozpoznání a zpracování co největšího počtu vygenerovaných čísel od 1 do 100.
+            </p>
+
+            <!-- Tabulka převodníku známek -->
+            <div class="w-full bg-slate-900/70 border border-slate-700/50 rounded-2xl p-4 mb-8 text-left">
+                <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3 flex items-center gap-2">
+                    <span>🏆</span> Stupnice hodnocení (Známky)
+                </h3>
+                <div class="grid grid-cols-5 gap-2 text-center text-xs sm:text-sm font-semibold">
+                    <div class="bg-emerald-950/60 border border-emerald-500/30 p-2.5 rounded-xl text-emerald-300 flex flex-col items-center">
+                        <span class="text-xl font-extrabold">1</span>
+                        <span class="text-[10px] sm:text-xs text-emerald-400/80 mt-1">&gt; 25 b.</span>
+                    </div>
+                    <div class="bg-teal-950/60 border border-teal-500/30 p-2.5 rounded-xl text-teal-300 flex flex-col items-center">
+                        <span class="text-xl font-extrabold">2</span>
+                        <span class="text-[10px] sm:text-xs text-teal-400/80 mt-1">20–25 b.</span>
+                    </div>
+                    <div class="bg-yellow-950/60 border border-yellow-500/30 p-2.5 rounded-xl text-yellow-300 flex flex-col items-center">
+                        <span class="text-xl font-extrabold">3</span>
+                        <span class="text-[10px] sm:text-xs text-yellow-400/80 mt-1">15–19 b.</span>
+                    </div>
+                    <div class="bg-orange-950/60 border border-orange-500/30 p-2.5 rounded-xl text-orange-300 flex flex-col items-center">
+                        <span class="text-xl font-extrabold">4</span>
+                        <span class="text-[10px] sm:text-xs text-orange-400/80 mt-1">10–14 b.</span>
+                    </div>
+                    <div class="bg-rose-950/60 border border-rose-500/30 p-2.5 rounded-xl text-rose-300 flex flex-col items-center">
+                        <span class="text-xl font-extrabold">5</span>
+                        <span class="text-[10px] sm:text-xs text-rose-400/80 mt-1">&lt; 10 b.</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tlačítko START -->
+            <button id="btn-start" class="w-full py-5 px-8 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950 font-black text-xl rounded-2xl shadow-lg shadow-emerald-500/25 active:scale-95 transition-all transform flex items-center justify-center gap-3">
+                <span>SPUSTIT TEST</span>
+                <svg class="w-6 h-6 fill-current" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+            </button>
+
+            <p class="mt-4 text-xs text-slate-500">
+                Tip: Na počítači lze využít klávesové zkratky <kbd class="px-1.5 py-0.5 bg-slate-700 rounded text-slate-300">Z</kbd> / <kbd class="px-1.5 py-0.5 bg-slate-700 rounded text-slate-300">C</kbd> nebo <kbd class="px-1.5 py-0.5 bg-slate-700 rounded text-slate-300">←</kbd> / <kbd class="px-1.5 py-0.5 bg-slate-700 rounded text-slate-300">→</kbd>
+            </p>
+        </section>
+
+        <!-- 2. HERNÍ OBRAZOVKA -->
+        <section id="screen-game" class="hidden w-full max-w-2xl flex-col items-center">
+            
+            <!-- Horní lišta hry: Časovač a Skóre -->
+            <div class="w-full bg-slate-800/90 border border-slate-700/60 rounded-3xl p-5 mb-6 shadow-xl backdrop-blur-xl">
+                <div class="flex justify-between items-center mb-3">
+                    <div class="flex items-center gap-2">
+                        <span class="text-xl">⏱️</span>
+                        <span id="time-display" class="font-mono text-2xl font-black text-emerald-400">60s</span>
+                    </div>
+                    <div class="flex items-center gap-4 text-sm font-bold">
+                        <span class="text-emerald-400 flex items-center gap-1">
+                            <span>✓</span> <span id="correct-count">0</span>
+                        </span>
+                        <span class="text-rose-400 flex items-center gap-1">
+                            <span>✗</span> <span id="wrong-count">0</span>
+                        </span>
+                        <div class="bg-slate-700/80 px-3 py-1 rounded-full text-slate-200">
+                            Skóre: <span id="score-display" class="text-white font-extrabold text-lg ml-1">0</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Grafická lišta času -->
+                <div class="w-full h-3 bg-slate-900/80 rounded-full overflow-hidden p-0.5 border border-slate-700/50">
+                    <div id="time-bar" class="h-full bg-gradient-to-r from-emerald-500 to-teal-400 rounded-full transition-all duration-1000 ease-linear w-full"></div>
+                </div>
+            </div>
+
+            <!-- Kartuše s generovaným číslem -->
+            <div class="w-full bg-gradient-to-b from-slate-800/90 to-slate-800/50 border border-slate-700/80 rounded-3xl p-8 sm:p-12 shadow-2xl backdrop-blur-xl flex flex-col items-center justify-center mb-6 relative overflow-hidden">
+                <div class="text-xs font-bold uppercase tracking-widest text-slate-400 mb-2">Vygenerované číslo</div>
+                <div id="number-display" class="text-7xl sm:text-9xl font-black text-white tracking-tight my-4 number-pop drop-shadow-lg min-h-[120px] flex items-center justify-center">
+                    --
+                </div>
+            </div>
+
+            <!-- Tlačítka odpovědí (Optimalizováno pro tablety a dotyk) -->
+            <div class="grid grid-cols-2 gap-4 sm:gap-6 w-full">
+                <!-- Zelené tlačítko -->
+                <button id="btn-green" class="group relative py-6 sm:py-8 px-4 bg-gradient-to-b from-emerald-500 to-emerald-600 hover:from-emerald-400 hover:to-emerald-500 active:from-emerald-600 active:to-emerald-700 text-slate-950 font-black rounded-3xl shadow-xl shadow-emerald-500/20 active:scale-95 transition-all duration-150 flex flex-col items-center justify-center gap-1">
+                    <div class="w-12 h-12 rounded-full bg-slate-950/20 flex items-center justify-center text-2xl mb-1 group-active:scale-90 transition-transform">
+                        ✓
+                    </div>
+                    <span class="text-xl sm:text-2xl font-black tracking-wide text-white drop-shadow">SPRÁVNĚ</span>
+                    <span class="text-xs text-emerald-950/80 font-bold uppercase tracking-wider hidden sm:block">+1 Bod (Z / ←)</span>
+                </button>
+
+                <!-- Červené tlačítko -->
+                <button id="btn-red" class="group relative py-6 sm:py-8 px-4 bg-gradient-to-b from-rose-500 to-rose-600 hover:from-rose-400 hover:to-rose-500 active:from-rose-600 active:to-rose-700 text-slate-950 font-black rounded-3xl shadow-xl shadow-rose-500/20 active:scale-95 transition-all duration-150 flex flex-col items-center justify-center gap-1">
+                    <div class="w-12 h-12 rounded-full bg-slate-950/20 flex items-center justify-center text-2xl mb-1 group-active:scale-90 transition-transform">
+                        ✗
+                    </div>
+                    <span class="text-xl sm:text-2xl font-black tracking-wide text-white drop-shadow">ŠPATNĚ</span>
+                    <span class="text-xs text-rose-950/80 font-bold uppercase tracking-wider hidden sm:block">Chyba (C / →)</span>
+                </button>
+            </div>
+        </section>
+
+        <!-- 3. OBRAZOVKA VÝSLEDKŮ -->
+        <section id="screen-result" class="hidden w-full max-w-xl bg-slate-800/90 border border-slate-700/60 rounded-3xl p-6 sm:p-8 shadow-2xl backdrop-blur-xl flex flex-col items-center text-center">
+            <div class="text-xs font-extrabold uppercase tracking-widest text-slate-400 mb-1">Test dokončen</div>
+            <h2 class="text-2xl sm:text-3xl font-extrabold text-white mb-6">Výsledná známka</h2>
+
+            <!-- Zobrazení Známky -->
+            <div id="grade-badge" class="w-28 h-28 sm:w-32 sm:h-32 rounded-3xl flex flex-col items-center justify-center text-5xl sm:text-6xl font-black mb-6 shadow-2xl transition-transform duration-500 scale-100">
+                <span id="grade-display">-</span>
+                <span id="grade-text" class="text-xs font-bold uppercase tracking-wider mt-1 opacity-90"></span>
+            </div>
+
+            <!-- Podrobná statistika -->
+            <div class="w-full bg-slate-900/70 border border-slate-700/50 rounded-2xl p-5 mb-8 grid grid-cols-2 sm:grid-cols-4 gap-3 text-center">
+                <div class="p-2 bg-slate-800/50 rounded-xl">
+                    <div class="text-xs text-slate-400 font-medium">Celkové Skóre</div>
+                    <div id="res-score" class="text-2xl font-black text-white mt-1">0</div>
+                </div>
+                <div class="p-2 bg-slate-800/50 rounded-xl">
+                    <div class="text-xs text-slate-400 font-medium">Správně</div>
+                    <div id="res-correct" class="text-2xl font-black text-emerald-400 mt-1">0</div>
+                </div>
+                <div class="p-2 bg-slate-800/50 rounded-xl">
+                    <div class="text-xs text-slate-400 font-medium">Špatně</div>
+                    <div id="res-wrong" class="text-2xl font-black text-rose-400 mt-1">0</div>
+                </div>
+                <div class="p-2 bg-slate-800/50 rounded-xl">
+                    <div class="text-xs text-slate-400 font-medium">Úspěšnost</div>
+                    <div id="res-accuracy" class="text-2xl font-black text-teal-300 mt-1">0%</div>
+                </div>
+            </div>
+
+            <!-- Tlačítka pro opakování -->
+            <button id="btn-restart" class="w-full py-5 px-8 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950 font-black text-xl rounded-2xl shadow-lg shadow-emerald-500/25 active:scale-95 transition-all flex items-center justify-center gap-3">
+                <span>NOVÝ TEST</span>
+                <svg class="w-6 h-6 fill-current" viewBox="0 0 24 24"><path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>
+            </button>
+        </section>
+
+    </main>
+
+    <!-- Zápatí -->
+    <footer class="w-full p-4 text-center text-xs text-slate-500 border-t border-slate-800/60">
+        <p>Aplikace pro rychlé hodnocení čísel • Optimalizováno pro tablety a mobilní zařízení</p>
+    </footer>
+
+    <script>
+
+        // Zvukové efekty vytvořené pomocí Web Audio API (nepotřebuje žádné externí soubory)
+        class SoundFX {
+            constructor() {
+                this.ctx = null;
+                this.enabled = true;
+            }
+
+            init() {
+                if (!this.ctx) {
+                    const AudioContext = window.AudioContext || window.webkitAudioContext;
+                    this.ctx = new AudioContext();
+                }
+            }
+
+            playTone(freq, type, duration, gainValue = 0.1) {
+                if (!this.enabled) return;
+                this.init();
+                
+                try {
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+
+                    osc.type = type;
+                    osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
+
+                    gain.gain.setValueAtTime(gainValue, this.ctx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.0001, this.ctx.currentTime + duration);
+
+                    osc.connect(gain);
+                    gain.connect(this.ctx.destination);
+
+                    osc.start();
+                    osc.stop(this.ctx.currentTime + duration);
+                } catch (e) {
+                    console.error("Audio error:", e);
+                }
+            }
+
+            playCorrect() {
+                // Krátký přívětivý akord / tón
+                this.playTone(523.25, 'sine', 0.12, 0.15); // C5
+                setTimeout(() => this.playTone(659.25, 'sine', 0.15, 0.15), 60); // E5
+            }
+
+            playWrong() {
+                // Hlubší disonantní tón
+                this.playTone(220, 'triangle', 0.2, 0.2); // A3
+                setTimeout(() => this.playTone(196, 'triangle', 0.25, 0.2), 80); // G3
+            }
+
+            playFinish() {
+                // Fanfára na konci
+                const notes = [440, 554.37, 659.25, 880];
+                notes.forEach((freq, idx) => {
+                    setTimeout(() => this.playTone(freq, 'sine', 0.3, 0.15), idx * 100);
+                });
+            }
+        }
+
+        const soundFX = new SoundFX();
+
+        // Stavové proměnné
+        const GAME_DURATION = 60; // 60 sekund
+        let timer = null;
+        let timeLeft = GAME_DURATION;
+        let score = 0;
+        let correctCount = 0;
+        let wrongCount = 0;
+        let currentNumber = 0;
+        let isGameActive = false;
+
+        // DOM Elementy
+        const screenStart = document.getElementById('screen-start');
+        const screenGame = document.getElementById('screen-game');
+        const screenResult = document.getElementById('screen-result');
+
+        const btnStart = document.getElementById('btn-start');
+        const btnRestart = document.getElementById('btn-restart');
+        const btnGreen = document.getElementById('btn-green');
+        const btnRed = document.getElementById('btn-red');
+
+        const timeDisplay = document.getElementById('time-display');
+        const timeBar = document.getElementById('time-bar');
+        const scoreDisplay = document.getElementById('score-display');
+        const correctCountDisplay = document.getElementById('correct-count');
+        const wrongCountDisplay = document.getElementById('wrong-count');
+        const numberDisplay = document.getElementById('number-display');
+
+        const gradeDisplay = document.getElementById('grade-display');
+        const gradeBadge = document.getElementById('grade-badge');
+        const gradeText = document.getElementById('grade-text');
+        const resScore = document.getElementById('res-score');
+        const resCorrect = document.getElementById('res-correct');
+        const resWrong = document.getElementById('res-wrong');
+        const resAccuracy = document.getElementById('res-accuracy');
+
+        const soundToggle = document.getElementById('sound-toggle');
+        const soundIcon = document.getElementById('sound-icon');
+        const soundText = document.getElementById('sound-text');
+        const bodyContainer = document.getElementById('body-container');
+
+
+        // Generování nového náhodného čísla (1–100)
+        function generateNewNumber() {
+            let newNum;
+            // Zajistit, aby se stejné číslo neopakovalo dvakrát za sebou
+            do {
+                newNum = Math.floor(Math.random() * 100) + 1;
+            } while (newNum === currentNumber && false);
+
+            currentNumber = newNum;
+            numberDisplay.textContent = currentNumber;
+
+            // Animace skoku čísla
+            numberDisplay.classList.remove('number-pop');
+            void numberDisplay.offsetWidth; // trigger reflow
+            numberDisplay.classList.add('number-pop');
+        }
+
+        // Spuštění testu
+        function startGame() {
+            score = 0;
+            correctCount = 0;
+            wrongCount = 0;
+            timeLeft = GAME_DURATION;
+            isGameActive = true;
+
+            // Aktualizace UI
+            updateUI();
+            screenStart.classList.add('hidden');
+            screenResult.classList.add('hidden');
+            screenGame.classList.remove('hidden');
+            screenGame.classList.add('flex');
+
+            generateNewNumber();
+
+            // Spuštění časovače
+            clearInterval(timer);
+            timer = setInterval(() => {
+                timeLeft--;
+                updateTimerUI();
+
+                if (timeLeft <= 0) {
+                    endGame();
+                }
+            }, 1000);
+        }
+
+        // Aktualizace časovače v UI
+        function updateTimerUI() {
+            timeDisplay.textContent = `${timeLeft}s`;
+            const percentage = (timeLeft / GAME_DURATION) * 100;
+            timeBar.style.width = `${percentage}%`;
+
+            // Změna barvy časovače při nízkém čase
+            if (timeLeft <= 10) {
+                timeDisplay.classList.remove('text-emerald-400');
+                timeDisplay.classList.add('text-rose-400');
+                timeBar.classList.remove('from-emerald-500', 'to-teal-400');
+                timeBar.classList.add('from-rose-500', 'to-red-600');
+            } else {
+                timeDisplay.classList.add('text-emerald-400');
+                timeDisplay.classList.remove('text-rose-400');
+                timeBar.classList.add('from-emerald-500', 'to-teal-400');
+                timeBar.classList.remove('from-rose-500', 'to-red-600');
+            }
+        }
+
+        // Aktualizace skóre v UI
+        function updateUI() {
+            scoreDisplay.textContent = score;
+            correctCountDisplay.textContent = correctCount;
+            wrongCountDisplay.textContent = wrongCount;
+        }
+
+        // Zpracování odpovědi
+        function handleAnswer(isGreen) {
+            if (!isGameActive) return;
+
+            if (isGreen) {
+                // Zelené tlačítko = Správně / +1 bod
+                score++;
+                correctCount++;
+                soundFX.playCorrect();
+                triggerFlash('correct');
+            } else {
+                // Červené tlačítko = Špatně
+                wrongCount++;
+                soundFX.playWrong();
+                triggerFlash('wrong');
+            }
+
+            updateUI();
+            generateNewNumber();
+        }
+
+        // Vizuální odezva na pozadí (Flash efekt)
+        function triggerFlash(type) {
+            bodyContainer.classList.remove('flash-correct', 'flash-wrong');
+            void bodyContainer.offsetWidth; // reflow
+            if (type === 'correct') {
+                bodyContainer.classList.add('flash-correct');
+            } else {
+                bodyContainer.classList.add('flash-wrong');
+            }
+        }
+
+
+        // Ukončení testu a výpočet známky
+        function endGame() {
+            clearInterval(timer);
+            isGameActive = false;
+            soundFX.playFinish();
+
+            // Přepnutí obrazovek
+            screenGame.classList.add('hidden');
+            screenGame.classList.remove('flex');
+            screenResult.classList.remove('hidden');
+
+            // Výpočet úspěšnosti
+            const totalAnswers = correctCount + wrongCount;
+            const accuracy = totalAnswers > 0 ? Math.round((correctCount / totalAnswers) * 100) : 0;
+
+            // Výpočet známky na základě zadání:
+            // > 25 bodů -> Známka 1
+            // 20 - 25 bodů -> Známka 2
+            // 15 - 19 bodů -> Známka 3
+            // 10 - 14 bodů -> Známka 4
+            // < 10 bodů -> Známka 5
+            let grade = 5;
+            let gradeBadgeStyle = "";
+            let label = "";
+
+            if (score > 25) {
+                grade = 1;
+                label = "Výborně";
+                gradeBadgeStyle = "bg-gradient-to-b from-emerald-400 to-emerald-600 text-slate-950 shadow-emerald-500/30";
+                
+                // Konfeti efekt při nejlepším výsledku
+                if (typeof confetti === 'function') {
+                    confetti({
+                        particleCount: 100,
+                        spread: 70,
+                        origin: { y: 0.6 }
+                    });
+                }
+            } else if (score >= 20) {
+                grade = 2;
+                label = "Chvalitebně";
+                gradeBadgeStyle = "bg-gradient-to-b from-teal-400 to-teal-600 text-slate-950 shadow-teal-500/30";
+            } else if (score >= 15) {
+                grade = 3;
+                label = "Dobrý";
+                gradeBadgeStyle = "bg-gradient-to-b from-yellow-400 to-yellow-600 text-slate-950 shadow-yellow-500/30";
+            } else if (score >= 10) {
+                grade = 4;
+                label = "Dostatečný";
+                gradeBadgeStyle = "bg-gradient-to-b from-orange-400 to-orange-600 text-slate-950 shadow-orange-500/30";
+            } else {
+                grade = 5;
+                label = "Nedostatečný";
+                gradeBadgeStyle = "bg-gradient-to-b from-rose-500 to-rose-700 text-white shadow-rose-500/30";
+            }
+
+            // Vyplnění výsledků do DOM
+            gradeDisplay.textContent = grade;
+            gradeText.textContent = label;
+            gradeBadge.className = `w-28 h-28 sm:w-32 sm:h-32 rounded-3xl flex flex-col items-center justify-center text-5xl sm:text-6xl font-black mb-6 shadow-2xl transition-transform duration-500 scale-100 ${gradeBadgeStyle}`;
+
+            resScore.textContent = score;
+            resCorrect.textContent = correctCount;
+            resWrong.textContent = wrongCount;
+            resAccuracy.textContent = `${accuracy}%`;
+        }
+
+
+        // Event Listeners pro Tlačítka
+        btnStart.addEventListener('click', startGame);
+        btnRestart.addEventListener('click', startGame);
+
+        btnGreen.addEventListener('click', () => handleAnswer(true));
+        btnRed.addEventListener('click', () => handleAnswer(false));
+
+        // Přepínání zvuku
+        soundToggle.addEventListener('click', () => {
+            soundFX.enabled = !soundFX.enabled;
+            if (soundFX.enabled) {
+                soundIcon.textContent = "🔊";
+                soundText.textContent = "Zvuk Zapnut";
+            } else {
+                soundIcon.textContent = "🔇";
+                soundText.textContent = "Zvuk Vypnut";
+            }
+        });
+
+        // Ovládání Klávesnicí pro PC
+        window.addEventListener('keydown', (e) => {
+            if (!isGameActive) {
+                if (e.code === 'Space' || e.code === 'Enter') {
+                    if (!screenStart.classList.contains('hidden') || !screenResult.classList.contains('hidden')) {
+                        startGame();
+                    }
+                }
+                return;
+            }
+
+            // Zelené tlačítko (Šipka vlevo / Klávesa Z)
+            if (e.key === 'ArrowLeft' || e.key === 'z' || e.key === 'Z') {
+                handleAnswer(true);
+            }
+            // Červené tlačítko (Šipka vpravo / Klávesa C)
+            else if (e.key === 'ArrowRight' || e.key === 'c' || e.key === 'C') {
+                handleAnswer(false);
+            }
+        });
+
+        // Prevent nepříjemného skrolování při dotyku na tlačítka
+        document.querySelectorAll('button').forEach(btn => {
+            btn.addEventListener('touchstart', (e) => {
+                // Ponecháme standardní chování kliku
+            }, { passive: true });
+        });
+    </script>
+</body>
+</html>
